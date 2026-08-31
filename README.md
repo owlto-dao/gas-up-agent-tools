@@ -4,6 +4,40 @@ MCP server and portable Agent Skill for Gas Up native gas top-up workflows.
 
 The MCP server is a thin adapter over the Gas Up backend API. It does not contain order, pricing, treasury, or payment verification business logic.
 
+## Hosted Usage
+
+Most users do not need to run this repository. Use the hosted MCP endpoint:
+
+```text
+https://mcp.gasup.owlto.finance/mcp
+```
+
+Configure your Agent client to send your Gas Up API key with each request:
+
+```text
+X-API-Key: gs_live_...
+```
+
+or:
+
+```text
+Authorization: Bearer gs_live_...
+```
+
+Wallet-session flows can also pass:
+
+```text
+X-Wallet-Session-Id: ws_...
+```
+
+## Security
+
+Never paste wallet private keys, seed phrases, or unrelated account credentials into Agent clients.
+
+Do not configure `GAS_UP_API_KEY` for public user-facing deployments. That variable is only a fallback for private/internal deployments. Public deployments should use request-scoped user credentials so permissions, rate limits, and audit logs stay tied to the correct user.
+
+For write actions such as quote locking, order creation, and payment submission, agents should ask for user confirmation before calling the MCP tool.
+
 ## Run Locally
 
 ```bash
@@ -108,3 +142,7 @@ Recommended production URL:
 ```text
 https://mcp.gasup.owlto.finance/mcp
 ```
+
+## License
+
+MIT
