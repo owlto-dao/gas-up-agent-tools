@@ -88,6 +88,56 @@ func TestHTTPHandlerForwardsBearerAPIKey(t *testing.T) {
 	}
 }
 
+func TestHTTPHandlerCopiesWalletSessionHeaderIntoQuoteBody(t *testing.T) {
+	var gotSessionHeader string
+	var gotWalletSessionID string
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotSessionHeader = r.Header.Get("X-Wallet-Session-Id")
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		gotWalletSessionID, _ = body["walletSessionId"].(string)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	}))
+	defer backend.Close()
+
+	handler := NewHTTPHandler(Options{BackendBaseURL: backend.URL})
+	reqBody, _ := json.Marshal(map[string]any{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "tools/call",
+		"params": map[string]any{
+			"name": "preview_gas_order_quote",
+			"arguments": map[string]any{
+				"targetChainId":      "56",
+				"receivingAddresses": []string{"0xDbe00f4f94B8931236713Be25E2798e24db0d648"},
+				"gasTimes":           1,
+				"paymentMethod":      map[string]any{"paymentChainId": "8453", "asset": "ETH"},
+				"deliverySchedule":   map[string]any{"mode": "immediate"},
+				"executionGasPrice":  map[string]any{"mode": "realtime", "unit": "gwei"},
+			},
+		},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/mcp", bytes.NewReader(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	req.Header.Set("X-Wallet-Session-Id", "ws_test_session")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if gotSessionHeader != "ws_test_session" {
+		t.Fatalf("forwarded wallet session header = %q", gotSessionHeader)
+	}
+	if gotWalletSessionID != "ws_test_session" {
+		t.Fatalf("walletSessionId body = %q", gotWalletSessionID)
+	}
+}
+
 func postMCP(t *testing.T, handler http.Handler, payload map[string]any) map[string]any {
 	t.Helper()
 	reqBody, err := json.Marshal(payload)

@@ -131,6 +131,7 @@ func registerTools(server *mcp.Server, api *APIClient) {
 		Description: "Return a live gas order quote preview without locking a quote. Use this before asking the user to confirm a paid gas top-up.",
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: readOnly, IdempotentHint: true},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input gasQuoteInput) (*mcp.CallToolResult, any, error) {
+		input = withWalletSession(input, api.walletSessionID)
 		return toolPost(ctx, api, "/v1/gas-orders/check", input, false)
 	})
 
@@ -140,6 +141,7 @@ func registerTools(server *mcp.Server, api *APIClient) {
 		Description: "Create a locked quote for a gas top-up order. The next create_gas_order call must reuse the same targetChainId, recipients, gasTimes, paymentMethod, deliverySchedule, and executionGasPrice.",
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: notReadOnly, IdempotentHint: true, DestructiveHint: &nonDestructive},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input gasQuoteInput) (*mcp.CallToolResult, any, error) {
+		input = withWalletSession(input, api.walletSessionID)
 		return toolPost(ctx, api, "/v1/gas-orders/quote", input, idempotent)
 	})
 
@@ -149,6 +151,7 @@ func registerTools(server *mcp.Server, api *APIClient) {
 		Description: "Create a gas top-up order from a locked quote. Ask the user to confirm before using this tool. The request must exactly match the locked quote except orderName.",
 		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: notReadOnly, IdempotentHint: true, DestructiveHint: &nonDestructive},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, input createGasOrderInput) (*mcp.CallToolResult, any, error) {
+		input = withCreateOrderWalletSession(input, api.walletSessionID)
 		return toolPost(ctx, api, "/v1/gas-orders", input, idempotent)
 	})
 
@@ -199,6 +202,20 @@ func toolGet(ctx context.Context, api *APIClient, path string, query url.Values)
 func toolPost(ctx context.Context, api *APIClient, path string, body any, idempotent bool) (*mcp.CallToolResult, any, error) {
 	output, err := api.Post(ctx, path, body, idempotent)
 	return nil, output, err
+}
+
+func withWalletSession(input gasQuoteInput, walletSessionID string) gasQuoteInput {
+	if input.WalletSessionID == "" {
+		input.WalletSessionID = walletSessionID
+	}
+	return input
+}
+
+func withCreateOrderWalletSession(input createGasOrderInput, walletSessionID string) createGasOrderInput {
+	if input.WalletSessionID == "" {
+		input.WalletSessionID = walletSessionID
+	}
+	return input
 }
 
 func paginationQuery(input paginationInput, defaultLimit, maxLimit int) url.Values {
