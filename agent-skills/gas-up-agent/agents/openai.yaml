@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gas Up Agent"
+  short_description: "Guide agents through Gas Up MCP orders"
+  default_prompt: "Use $gas-up-agent to quote and create a Gas Up native gas top-up safely."
