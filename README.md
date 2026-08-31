@@ -9,7 +9,7 @@ The MCP server is a thin adapter over the Gas Up backend API. It does not contai
 Most users do not need to run this repository. Use the hosted MCP endpoint:
 
 ```text
-https://mcp.gasup.owlto.finance/mcp
+https://gasup-mcp.owlto.finance/mcp
 ```
 
 Configure your Agent client to send your Gas Up API key with each request:
@@ -140,7 +140,7 @@ pm2 save
 Recommended production URL:
 
 ```text
-https://mcp.gasup.owlto.finance/mcp
+https://gasup-mcp.owlto.finance/mcp
 ```
 
 ## License
